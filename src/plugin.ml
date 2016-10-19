@@ -30,28 +30,30 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-open Genlex ;;
-open Parser ;;
 open Ast ;;
-open Plugin ;;
 
-let kwds = [
-  "package" ; "class" ; "fun" ;
-  ":" ; "-" ; "+" ; "->" ;
-  "(" ; ")" ; "[" ; "]" ;
-  "public" ; "private" ; "protected" ;
-  "final" ; "abstract" ; "const" ; "static" ] ;;
+exception NoPluginLoaded ;;
+exception PluginLoadingError of string ;;
+exception UnsupportedFeature of string * string ;;
 
-let () =
-  try
-    let lang = Sys.argv.(1) in
-    let code = Sys.argv.(2) in
-    let lex = make_lexer kwds (Stream.of_string code) in
-    let ast = Parser.configuration_parser lex in
-    let () = load_plugin ("lib/" ^ lang ^ ".cmo") in
-    let module Lang = (val get_plugin () : PLUG) in
-    print_endline (Lang.compile ast)
-  with
-  | NoPluginLoaded -> print_endline "No language module has been loaded"
-  | PluginLoadingError e -> print_endline e
-  | UnsupportedFeature (lang, feat) -> print_endline ("Language " ^ lang ^ " does not support " ^ feat) ;;
+module type PLUG =
+  sig
+    val compile : ast -> string
+  end ;;
+
+let plugin = ref None ;;
+let get_plugin () : (module PLUG) =
+  match !plugin with
+  | Some s -> s
+  | None -> raise NoPluginLoaded ;;
+
+let load_plugin fname =
+  let filename = Dynlink.adapt_filename fname in
+  if Sys.file_exists filename then
+    try
+      Dynlink.loadfile filename
+    with
+    | Dynlink.Error err -> raise (PluginLoadingError (Dynlink.error_message err))
+    | _ -> raise (PluginLoadingError "")
+  else
+    raise (PluginLoadingError "Plugin file does not exist") ;;
