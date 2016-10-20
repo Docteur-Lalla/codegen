@@ -92,13 +92,21 @@ and fun_definition_parser = parser
   new_fun v s false name t
 
 and type_parser =
-  let rec aux left = parser
-  | [< 'Kwd "->" ; right = type_parser >] -> Arrow (left, right)
+  let rec aux left name = parser
+  | [< 'Kwd "->" ; right = type_parser >] ->
+    begin match name with
+    | None -> Arrow (left, right)
+    | Some n -> NamedArrow ((n, left), right)
+    end
   | [< 'Kwd "[" ;
     size = optional None (parser [< 'Int n >] -> Some n) ;
-    'Kwd "]" ; s >] -> aux (Array (left, size)) s
+    'Kwd "]" ; s >] -> aux (Array (left, size)) None s
   | [< >] -> left
+  
+  in let parenthesized t = parser
+  | [< 'Kwd ")" ; s >] -> aux t None s
+  | [< 'Ident name ; 'Kwd ")" ; s >] -> aux t (Some name) s
 
   in parser
-  | [< 'Kwd "(" ; t = type_parser ; 'Kwd ")" ; s >] -> aux t s
-  | [< 'Ident name ; s >] -> aux (Simple name) s ;;
+  | [< 'Kwd "(" ; t = type_parser ; s >] -> parenthesized t s
+  | [< 'Ident name ; s >] -> aux (Simple name) None s ;;

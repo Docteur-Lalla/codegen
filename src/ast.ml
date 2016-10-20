@@ -74,7 +74,8 @@ and fun_struct = {
 and datatype =
 | Simple of string
 | Array of datatype * int option
-| Arrow of datatype * datatype ;;
+| Arrow of datatype * datatype
+| NamedArrow of (string * datatype) * datatype ;;
 
 let rec print_type = function
 | Simple t -> t
@@ -85,7 +86,8 @@ let rec print_type = function
 | Array (Array (_,_) as t, None) -> print_type t ^ "[]"
 | Array (t, None) -> "(" ^ print_type t ^ ")[]"
 | Arrow (Arrow (a, b), c) -> "(" ^ print_type (Arrow (a, b)) ^ ") -> " ^ print_type c
-| Arrow (a, b) -> print_type a ^ " -> " ^ print_type b ;;
+| Arrow (a, b) -> print_type a ^ " -> " ^ print_type b
+| NamedArrow ((name, a), b) -> "(" ^ print_type a ^ " " ^ name ^ ") -> " ^ print_type b ;;
 
 let rec print_configuration = function
 | Configuration [] -> ""

@@ -14,7 +14,8 @@ let rec print_type = function
     prerr_endline "Warning: array size is not part of the type in Java" ;
     print_type (Array (t, None))
   end
-| Arrow _ -> raise (UnsupportedFeature ("Java", " function as variable")) ;;
+| Arrow _ -> raise (UnsupportedFeature ("Java", " function as variable"))
+| NamedArrow _ -> raise (UnsupportedFeature ("Java", " function as variable")) ;;
 
 let print_inheritance_property = function
 | Default -> ""
@@ -25,12 +26,14 @@ let rec get_return_type = function
 | Simple s -> s
 | Array (t, None) -> print_type t ^ "[]"
 | Array (t, Some _) -> print_type (Array (t, None))
-| Arrow (a, b) -> get_return_type b ;;
+| Arrow (a, b) -> get_return_type b
+| NamedArrow (a, b) -> get_return_type b ;;
 
 let rec get_argument_types = function
 | Simple _ -> []
 | Array _ -> []
-| Arrow (a, b) -> (print_type a) :: get_argument_types b ;;
+| Arrow (a, b) -> (print_type a) :: get_argument_types b
+| NamedArrow ((name, a), b) -> (print_type a ^ " " ^ name) :: get_argument_types b
 
 let print_tab tab = String.make (2 * tab) ' ' ;;
 
