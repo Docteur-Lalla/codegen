@@ -34,6 +34,18 @@ let rec get_argument_types = function
 
 let print_tab tab = String.make (2 * tab) ' ' ;;
 
+let rec is_valid_package =
+  let rec has_no_package = function
+  | [] -> true
+  | ((Package _) :: _) -> false
+  | _::t -> has_no_package t
+
+  in function
+  | Configuration [] -> true
+  | Configuration (Package (_, defs)::[]) -> has_no_package defs
+  | Configuration (Package (_, _)::_) -> false
+  | Configuration (_::t) -> has_no_package t ;;
+
 let compile_attribute tab (attr : attribute) =
   let visible_s = print_visibility attr.visible in
   let const_s = if attr.const then "final " else "" in
@@ -58,17 +70,26 @@ let compile_class tab (cls : class_struct) =
 
   if cls.inheritance = Abstract && cls.attrs = [] && all_abstract cls.mthds then
   (* Interface *)
-    print_tab tab ^ visible_s ^ " interface " ^ cls.name ^ "{\n" ^ mthds_s ^ "\n" ^ print_tab tab ^ "}"
+    print_tab tab ^ visible_s ^ " interface " ^ cls.name ^ " {\n" ^ mthds_s ^ "\n" ^ print_tab tab ^ "}"
   else
   (* Class *)
   let inherit_s = print_inheritance_property cls.inheritance in
   let attrs_s = String.concat "\n" (List.map (compile_attribute (tab+1)) cls.attrs) in
-  print_tab tab ^ visible_s ^ " " ^ inherit_s ^ "class " ^ cls.name ^ "{\n" ^ attrs_s ^ "\n\n" ^ mthds_s ^ "\n" ^ print_tab tab ^ "}"
+  let attrs_lf = if cls.mthds = [] || cls.attrs = [] then "" else "\n\n" in
+  print_tab tab ^ visible_s ^ " " ^ inherit_s ^ "class " ^ cls.name ^ " {\n" ^ attrs_s ^ attrs_lf ^ mthds_s ^ "\n" ^ print_tab tab ^ "}"
 
-let rec compile_to_java = function
-| Configuration [] -> ""
-| Configuration (Class cls::[]) -> compile_class 0 cls
-| Configuration (Class cls :: t) -> compile_class 0 cls ^ "\n\n" ^ compile_to_java (Configuration t)
+let rec compile_definition = function
+| Class cls -> compile_class 0 cls
+| Package (name, defs) ->
+  let defs_s = String.concat "\n\n" (List.map compile_definition defs) in
+  "package " ^ name ^ ";\n\n" ^ defs_s
+| Function _ -> raise (UnsupportedFeature ("Java", "stand alone functions")) ;;
+
+let compile_to_java ((Configuration c) as ast) =
+  if is_valid_package ast then
+    String.concat "\n\n" (List.map compile_definition c)
+  else
+    raise (UnsupportedFeature ("Java", "multiple or nested packages in one file")) ;;
 
 module Java : PLUG =
   struct
