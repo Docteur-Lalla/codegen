@@ -9,6 +9,12 @@ EXEC=bin/codegen
 
 all: $(OBJS) $(EXEC) $(addsuffix .cmo, $(basename $(LANGS)))
 
+install:
+	cp $(EXEC) /usr/bin/codegen
+	mkdir -p /usr/lib/codegen/lang
+	cp lib/*.cmo /usr/lib/codegen/lang/
+	cp lib/*.cmi /usr/lib/codegen/lang/
+
 $(BIN)/%.cmo: $(SRC)/%.ml
 	$(MLC) $(PREPROCESSOR) -o $@ -I $(BIN) -c $<
 

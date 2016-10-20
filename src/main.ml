@@ -53,7 +53,7 @@ let print_usage () =
 let compile lang code =
       let lex = make_lexer kwds (Stream.of_string code) in
       let ast = Parser.configuration_parser lex in
-      let () = load_plugin ("lib/" ^ lang ^ ".cmo") in
+      let () = load_plugin ("/usr/lib/codegen/lang/" ^ lang ^ ".cmo") in
       let module Lang = (val get_plugin () : PLUG) in
       Lang.compile ast ;;
 
