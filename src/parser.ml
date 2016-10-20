@@ -55,7 +55,8 @@ and definition_parser = parser
 and class_definition_parser = parser
 | [< v = optional Private visibility_parser ;
   final = optional Default inheritance_property_parser ;
-  'Ident name ; 'Kwd ":" ; c = class_struct_parser final v name >] -> Class c
+  'Ident name ;
+  super = optional None (parser [< 'Kwd "(" ; 'Ident s ; 'Kwd ")" >] -> Some s) ; 'Kwd ":" ; c = class_struct_parser final v name super >] -> Class c
 
 and visibility_parser = parser
 | [< 'Kwd "public" >] -> Public
@@ -66,9 +67,9 @@ and inheritance_property_parser = parser
 | [< 'Kwd "final" >] -> Final
 | [< 'Kwd "abstract" >] -> Abstract
 
-and class_struct_parser inheritance visible name = parser
+and class_struct_parser inheritance visible name super = parser
 | [< attrs = many attribute_parser ; mthds = many method_parser >] ->
-  new_class visible inheritance name attrs mthds
+  new_class visible inheritance name super attrs mthds
 
 and attribute_parser = parser
 | [< 'Kwd "+" ;

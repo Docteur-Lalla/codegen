@@ -42,6 +42,7 @@ and class_struct = {
   visible: visibility ;
   inheritance: inheritance_property ;
   name: string ;
+  super: string option ;
   attrs: attribute list ;
   mthds: fun_struct list
 }
@@ -105,8 +106,11 @@ and print_definition tab =
     | Default -> ""
     | Final -> "final "
     | Abstract -> "abstract " in
+    let super_s = match c.super with
+    | Some s -> "(" ^ s ^ ")"
+    | None -> "" in
 
-    indent ^ "class " ^ visible_s ^ " " ^ inherit_s ^  c.name ^ ":\n" ^
+    indent ^ "class " ^ visible_s ^ " " ^ inherit_s ^  c.name ^ super_s ^ ":\n" ^
     String.concat "\n" attr_list ^ attr_lf ^ String.concat "\n" mthd_list
 
   | Package (name, d) ->
@@ -134,10 +138,11 @@ and print_visibility = function
 | Private -> "private"
 | Protected -> "protected" ;;
 
-let new_class v h n a m = {
+let new_class v h n s a m = {
   visible = v ;
   inheritance = h ;
   name = n ;
+  super = s ;
   attrs = a ;
   mthds = m
 } ;;

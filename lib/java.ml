@@ -73,13 +73,19 @@ let compile_class tab (cls : class_struct) =
 
   if cls.inheritance = Abstract && cls.attrs = [] && all_abstract cls.mthds then
   (* Interface *)
-    print_tab tab ^ visible_s ^ " interface " ^ cls.name ^ " {\n" ^ mthds_s ^ "\n" ^ print_tab tab ^ "}"
+    let super = match cls.super with
+    | Some s -> " implements " ^ s
+    | None -> "" in
+    print_tab tab ^ visible_s ^ " interface " ^ cls.name ^ super ^ " {\n" ^ mthds_s ^ "\n" ^ print_tab tab ^ "}"
   else
   (* Class *)
   let inherit_s = print_inheritance_property cls.inheritance in
   let attrs_s = String.concat "\n" (List.map (compile_attribute (tab+1)) cls.attrs) in
   let attrs_lf = if cls.mthds = [] || cls.attrs = [] then "" else "\n\n" in
-  print_tab tab ^ visible_s ^ " " ^ inherit_s ^ "class " ^ cls.name ^ " {\n" ^ attrs_s ^ attrs_lf ^ mthds_s ^ "\n" ^ print_tab tab ^ "}"
+  let super = match cls.super with
+  | Some s -> " extends " ^ s
+  | None -> "" in
+  print_tab tab ^ visible_s ^ " " ^ inherit_s ^ "class " ^ cls.name ^ super ^ " {\n" ^ attrs_s ^ attrs_lf ^ mthds_s ^ "\n" ^ print_tab tab ^ "}"
 
 let rec compile_definition = function
 | Class cls -> compile_class 0 cls
