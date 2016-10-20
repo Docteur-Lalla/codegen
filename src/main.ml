@@ -35,6 +35,8 @@ open Parser ;;
 open Ast ;;
 open Plugin ;;
 
+exception InvalidArgumentCount of int * string ;;
+
 let kwds = [
   "package" ; "class" ; "fun" ;
   ":" ; "-" ; "+" ; "->" ;
@@ -42,16 +44,51 @@ let kwds = [
   "public" ; "private" ; "protected" ;
   "final" ; "abstract" ; "const" ; "static" ] ;;
 
+let print_usage () =
+  begin
+    prerr_endline "USAGE : codegen <lang>" ;
+    prerr_endline "USAGE : codegen <lang> <code>"
+  end ;;
+
+let compile lang code =
+      let lex = make_lexer kwds (Stream.of_string code) in
+      let ast = Parser.configuration_parser lex in
+      let () = load_plugin ("lib/" ^ lang ^ ".cmo") in
+      let module Lang = (val get_plugin () : PLUG) in
+      Lang.compile ast ;;
+
+let rec string_of_list = function
+| [] -> ""
+| h::t -> String.make 1 h ^ string_of_list t ;;
+
+let input_code () =
+  let rec aux cl =
+    try
+      aux (input_char stdin :: cl)
+    with
+    | End_of_file -> string_of_list (List.rev cl) in
+  aux [] ;;
+
 let () =
   try
-    let lang = Sys.argv.(1) in
-    let code = Sys.argv.(2) in
-    let lex = make_lexer kwds (Stream.of_string code) in
-    let ast = Parser.configuration_parser lex in
-    let () = load_plugin ("lib/" ^ lang ^ ".cmo") in
-    let module Lang = (val get_plugin () : PLUG) in
-    print_endline (Lang.compile ast)
+    let arg_count = Array.length Sys.argv in
+    match arg_count with
+    | 1 -> raise (InvalidArgumentCount (arg_count, "too few arguments"))
+    (* Get code from stdin *)
+    | 2 ->
+      let lang = Sys.argv.(1) in
+      let code = input_code () in
+      print_endline (compile lang code)
+    (* Get code from command line *)
+    | 3 ->
+      let lang = Sys.argv.(1) in
+      let code = Sys.argv.(2) in
+      print_endline (compile lang code)
+    | _ -> raise (InvalidArgumentCount (arg_count, "too many arguments"))
   with
-  | NoPluginLoaded -> print_endline "No language module has been loaded"
-  | PluginLoadingError e -> print_endline e
-  | UnsupportedFeature (lang, feat) -> print_endline ("Language " ^ lang ^ " does not support " ^ feat) ;;
+  | InvalidArgumentCount (n, msg) ->
+    prerr_endline ("Argument count = " ^ string_of_int n ^ ": " ^ msg) ;
+    print_usage ()
+  | NoPluginLoaded -> prerr_endline "No language module has been loaded"
+  | PluginLoadingError e -> prerr_endline e
+  | UnsupportedFeature (lang, feat) -> prerr_endline ("Language " ^ lang ^ " does not support " ^ feat) ;;

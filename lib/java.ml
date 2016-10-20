@@ -11,7 +11,7 @@ let rec print_type = function
 | Array (t, None) -> print_type t ^ "[]"
 | Array (t, Some _) ->
   begin
-    print_endline "Warning: array size is not part of the type in Java" ;
+    prerr_endline "Warning: array size is not part of the type in Java" ;
     print_type (Array (t, None))
   end
 | Arrow _ -> raise (UnsupportedFeature ("Java", " function as variable")) ;;
