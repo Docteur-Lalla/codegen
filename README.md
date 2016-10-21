@@ -35,3 +35,4 @@ Supported languages
 ===================
 
 * Java
+* C++
