@@ -83,19 +83,20 @@ let divide_class_by_visibility attrs mthds =
     visible = Protected ;
     mthds = keep_mthd Protected mthds ;
     attrs = keep_attr Protected attrs
-  } in [pub, priv, prot] ;;
+  } in (pub, priv, prot) ;;
 
 let compile_class tab cls =
   let super_s = match cls.super with
   | Some s -> " : public " ^ s
   | None -> "" in
   
-  let [pub, priv, prot] = divide_class_by_visibility cls.attrs cls.mthds in
+  let (pub, priv, prot) = divide_class_by_visibility cls.attrs cls.mthds in
   let visible_s p = match (p.mthds, p.attrs) with
   | ([], []) -> ""
   | _ ->
+    let mthd_lf = if List.length p.mthds = 0 then "" else "\n" in
     print_tab (tab+1) ^ print_visibility p.visible ^ ":\n" ^
-    String.concat "\n" (List.map (compile_method (tab+2)) p.mthds) ^ "\n" ^
+    String.concat "\n" (List.map (compile_method (tab+2)) p.mthds) ^ mthd_lf ^
     String.concat "\n" (List.map (compile_attribute (tab+2)) p.attrs) in
 
   let pub_s = visible_s pub in
@@ -108,7 +109,7 @@ let compile_class tab cls =
   let priv_lf = if empty_block prot then "" else "\n\n" in
 
   print_tab tab ^ "class " ^ cls.name ^ super_s ^ "\n" ^ print_tab tab ^ "{\n" ^
-  pub_s ^ pub_lf ^ prot_s ^ priv_lf ^ priv_s ^ "\n" ^ print_tab tab ^ "}" ;;
+  pub_s ^ pub_lf ^ prot_s ^ priv_lf ^ priv_s ^ "\n" ^ print_tab tab ^ "};" ;;
 
 let rec compile_package tab (name, defs) =
   let defs_s = String.concat "\n\n" (List.map (compile_definition (tab+1)) defs) in
